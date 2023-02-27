@@ -1,34 +1,63 @@
-/**
- * Some predefined delay values (in milliseconds).
- */
-export enum Delays {
-  Short = 500,
-  Medium = 2000,
-  Long = 5000,
-}
+import express from "express";
+import Database from "better-sqlite3";
+import cors from "cors";
+import { logger } from "./logger.js";
 
-/**
- * Returns a Promise<string> that resolves after a given time.
- *
- * @param {string} name - A name.
- * @param {number=} [delay=Delays.Medium] - A number of milliseconds to delay resolution of the Promise.
- * @returns {Promise<string>}
- */
-function delayedHello(
-  name: string,
-  delay: number = Delays.Medium,
-): Promise<string> {
-  return new Promise((resolve: (value?: string) => void) =>
-    setTimeout(() => resolve(`Hello, ${name}`), delay),
-  );
-}
+const db = new Database("../db.sqlite3", {
+  fileMustExist: true,
+});
+db.pragma("journal_mode = WAL");
 
-// Please see the comment in the .eslintrc.json file about the suppressed rule!
-// Below is an example of how to use ESLint errors suppression. You can read more
-// at https://eslint.org/docs/latest/user-guide/configuring/rules#disabling-rules
+const maxYear = db.prepare("SELECT MAX(year) as max FROM events").get().max;
+const maxCentury = Math.floor(maxYear / 100); // e.g. 2023 -> 20, 59 -> 0
+const selectStatement = db.prepare("SELECT text FROM events WHERE year = ?");
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export async function greeter(name: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
-  // The name parameter should be of type string. Any is used only to trigger the rule.
-  return await delayedHello(name, Delays.Long);
-}
+const getRandomInt = (min: number, max: number) => {
+  return Math.floor(Math.random() * (max + 1 - min)) + min;
+};
+
+const app = express();
+const port = 8000;
+
+app.use(cors());
+
+app.get("/events", (req, res) => {
+  let reqYear: number;
+  try {
+    reqYear = Number(req.query.year);
+    if (!Number.isInteger(reqYear)) throw new Error();
+    if (reqYear < 0) throw new Error();
+    if (reqYear % 100 > 59) throw new Error();
+  } catch (e) {
+    return res.sendStatus(400);
+  }
+
+  // For years in range: look for events in that year. If none found try random years until events are found
+  // For others: start trying random years immediately
+  const outOfRange = reqYear > maxYear || reqYear === 0;
+  let events = outOfRange ? [] : selectStatement.all(reqYear);
+  let matchedYear = reqYear;
+  let yearMatch = "full";
+  while (events.length === 0) {
+    const lastTwo = reqYear % 100;
+    const randomCentury = getRandomInt(0, maxCentury);
+    matchedYear = randomCentury * 100 + lastTwo;
+    events = selectStatement.all(matchedYear);
+    yearMatch = "last2";
+  }
+  return res.json({ year: matchedYear, yearMatch, events });
+});
+
+app.use((err, _req, res, _next) => {
+  logger.error("Error (global handler)", {
+    stack: err.stack,
+    timestamp: new Date(),
+  });
+  res.sendStatus(500);
+});
+
+app.listen(port, () => {
+  console.log(`App listening on port ${port}`);
+});
+
+process.on("exit", () => db.close());
