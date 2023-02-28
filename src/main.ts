@@ -3,7 +3,7 @@ import Database from "better-sqlite3";
 import cors from "cors";
 import { logger } from "./logger.js";
 
-const db = new Database("../db.sqlite3", {
+const db = new Database("db.sqlite3", {
   fileMustExist: true,
 });
 db.pragma("journal_mode = WAL");
@@ -12,7 +12,7 @@ const maxYear = db.prepare("SELECT MAX(year) as max FROM events").get().max;
 const maxCentury = Math.floor(maxYear / 100); // e.g. 2023 -> 20, 59 -> 0
 const selectStatement = db.prepare("SELECT text FROM events WHERE year = ?");
 
-const getRandomInt = (min: number, max: number) => {
+const getRandomInt = (min: number, max: number): number => {
   return Math.floor(Math.random() * (max + 1 - min)) + min;
 };
 
