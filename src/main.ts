@@ -10,7 +10,9 @@ db.pragma("journal_mode = WAL");
 
 const maxYear = db.prepare("SELECT MAX(year) as max FROM events").get().max;
 const maxCentury = Math.floor(maxYear / 100); // e.g. 2023 -> 20, 59 -> 0
-const selectStatement = db.prepare("SELECT text FROM events WHERE year = ?");
+const selectStatement = db.prepare(
+  "SELECT text, links FROM events WHERE year = ?",
+);
 
 const getRandomInt = (min: number, max: number): number => {
   return Math.floor(Math.random() * (max + 1 - min)) + min;
@@ -45,6 +47,10 @@ app.get("/events", (req, res) => {
     events = selectStatement.all(matchedYear);
     yearMatch = "last2";
   }
+  events = events.map((event) => ({
+    ...event,
+    links: JSON.parse(event.links),
+  }));
   return res.json({ year: matchedYear, yearMatch, events });
 });
 

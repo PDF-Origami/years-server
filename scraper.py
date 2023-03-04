@@ -4,6 +4,7 @@ import bs4.element
 import requests
 
 from time import time
+from json import dumps
 from collections import defaultdict
 from datetime import datetime
 from bs4 import BeautifulSoup
@@ -49,8 +50,8 @@ def save_events(year: int, events, conn: sqlite3.Connection):
     cursor.execute("DELETE FROM events WHERE year = ?", (year, ))
     # TODO: fix fetched_at actually being saved_at
     for event in events:
-        cursor.execute("INSERT INTO events(year, text, fetched_at) "
-                       "VALUES (?, ?, ?)", (year, event, datetime.now()))
+        cursor.execute("INSERT INTO events(year, text, fetched_at, links) "
+                       "VALUES (?, ?, ?, ?)", (year, event["text"], datetime.now(), dumps(event["links"])))
     conn.commit()
 
 
@@ -75,7 +76,24 @@ def get_events(year: int):
     event_elements = root.find_all(leaf_li_filter)
     # Add missing dates where applicable
     event_elements = [add_date(el) for el in event_elements]
-    events = [el.text for el in event_elements]
+    events = []
+    for el in event_elements:
+        pos = 0
+        positions = []
+        articles = []
+        for i in range(len(el.contents)):
+            child = el.contents[i]
+            if child.name == "a":
+                positions.append(pos)
+                positions.append(pos + len(child.text))
+                articles.append(child["href"][2:]) # TODO: Use .removeprefix() 
+            pos += len(child.text)
+        events.append({
+            "text": el.text,
+            "links": {
+                "positions": positions,
+                "articles": articles
+            }})
     return events
 
 def init_argparse() -> argparse.ArgumentParser:
@@ -92,11 +110,11 @@ def main(start_year: int, end_year: int, clean_slate=True):
     t0 = time()
     conn = sqlite3.connect("db.sqlite3")
     cursor = conn.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS events "
-                   "(year INT, text TEXT, universe TEXT, fetched_at TEXT)")
     if clean_slate:
-        print("Deleting all events")
-        cursor.execute("DELETE FROM events")
+        print("Dropping old events table")
+        cursor.execute("DROP TABLE events")
+    cursor.execute("CREATE TABLE IF NOT EXISTS events "
+                   "(year INT, text TEXT, fetched_at TEXT, links TEXT)")
     event_count = 0
     year_count = 0
     for year in range(start_year, end_year):
