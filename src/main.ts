@@ -48,12 +48,14 @@ app.get("/events", (req, res) => {
   let events = outOfRange ? [] : selectStatement.all(reqYear);
   let matchedYear = reqYear;
   let yearMatch = "full";
-  while (events.length === 0) {
+  let tries = 0;
+  while (events.length === 0 && tries < 20) {
     const lastTwo = reqYear % 100;
     const randomCentury = getRandomInt(0, maxCentury);
     matchedYear = randomCentury * 100 + lastTwo;
     events = selectStatement.all(matchedYear);
     yearMatch = "last2";
+    tries++;
   }
   events = events.map((event) => ({
     ...event,
