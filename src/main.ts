@@ -31,6 +31,7 @@ app.get("/events", (req, res) => {
     if (reqYear < 0) throw new Error();
     if (reqYear % 100 > 59) throw new Error();
   } catch (e) {
+    logger.info("/events 400", { timestamp: new Date() });
     return res.sendStatus(400);
   }
 
