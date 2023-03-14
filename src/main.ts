@@ -24,14 +24,21 @@ const port = 8000;
 app.use(cors());
 
 app.get("/events", (req, res) => {
-  let reqYear: number;
-  try {
-    reqYear = Number(req.query.year);
-    if (!Number.isInteger(reqYear)) throw new Error();
-    if (reqYear < 0) throw new Error();
-    if (reqYear % 100 > 59) throw new Error();
-  } catch (e) {
-    logger.info("/events 400", { timestamp: new Date() });
+  if (typeof req.query.year !== "string") {
+    logger.info("/events 400", {
+      timestamp: new Date(),
+      year: req.query.year,
+    });
+    return res.sendStatus(400);
+  }
+
+  const reqYear = parseInt(req?.query?.year);
+  if (Number.isNaN(reqYear) || reqYear < 0 || reqYear % 100 > 59) {
+    logger.info("/events 400", {
+      timestamp: new Date(),
+      year: req.query.year,
+      parsedYear: reqYear,
+    });
     return res.sendStatus(400);
   }
 
