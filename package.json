@@ -1,7 +1,7 @@
 {
-  "name": "node-typescript-boilerplate",
-  "version": "0.0.0",
-  "description": "Minimalistic boilerplate to quick-start Node.js development in TypeScript.",
+  "name": "chronology-clock-server",
+  "version": "1.0.1",
+  "description": "Serves events for chronologyclock.com",
   "type": "module",
   "engines": {
     "node": ">= 20.19 <21"
@@ -35,7 +35,7 @@
     "prettier": "prettier --config .prettierrc --write .",
     "test:watch": "jest --watch"
   },
-  "author": "Jakub Synowiec <jsynowiec@users.noreply.github.com>",
+  "author": "PDF-Origami <pdf-origami@users.noreply.github.com>",
   "license": "Apache-2.0",
   "dependencies": {
     "better-sqlite3": "^8.1.0",
