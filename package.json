@@ -4,7 +4,7 @@
   "description": "Minimalistic boilerplate to quick-start Node.js development in TypeScript.",
   "type": "module",
   "engines": {
-    "node": ">= 18.12 <19"
+    "node": ">= 20.19 <21"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.3",
@@ -43,8 +43,5 @@
     "express": "^4.18.2",
     "tslib": "~2.4",
     "winston": "^3.8.2"
-  },
-  "volta": {
-    "node": "18.12.1"
   }
 }
