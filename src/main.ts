@@ -8,9 +8,17 @@ const db = new Database("db.sqlite3", {
 });
 db.pragma("journal_mode = WAL");
 
-const maxYear = db.prepare("SELECT MAX(year) as max FROM events").get().max;
+type MaxYearResult = {
+  max: number
+}
+
+type EventResult = {
+  links: string
+}
+
+const maxYear = db.prepare<[], MaxYearResult>("SELECT MAX(year) as max FROM events").get().max;
 const maxCentury = Math.floor(maxYear / 100); // e.g. 2023 -> 20, 59 -> 0
-const selectStatement = db.prepare(
+const selectStatement = db.prepare<number, EventResult>(
   "SELECT text, links FROM events WHERE year = ?",
 );
 
